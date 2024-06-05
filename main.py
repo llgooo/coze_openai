@@ -113,6 +113,10 @@ def format_response(response, model):
     """
     Format the response for non-streaming chat completions.
     """
+    if response.get("messages") is not None and len(response.get("messages")) > 0:
+        content = response.get("messages", {})[0].get("content", "")
+    else:
+        raise HTTPException(status_code=400, detail="No content found in response")
     return {
         "id": "chatcmpl-" + str(uuid.uuid4()),
         "object": "chat.completion",
@@ -120,9 +124,9 @@ def format_response(response, model):
         "model": model,
         "choices": [{
             "index": 0,
-            "delta": {
+            "message": {
                 "role": "assistant",
-                "content": response.get("content", "")
+                "content": content
             },
             "logprobs": None,
             "finish_reason": "stop"

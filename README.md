@@ -23,20 +23,15 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ```sh
 curl -X POST http://localhost:8000/v1/chat/completions \
 -H "Content-Type: application/json" \
+-H "Authorization: Bearer pat_3WDbo72AZeBhS7YEu3E3cCUGAUzTMdzuebrHVWgzt9SCMU6SibrZ84JFdXQAbvd7" \
 -d '{
-      "model": "model_name",
+      "model": "your_bot_id",
       "messages": [
         {
           "role": "user",
-          "content": "Hello, how are you?"
+          "content": "who are you?"
         }
       ],
-      "temperature": 0.7,
-      "max_tokens": 150,
-      "top_p": 1.0,
-      "frequency_penalty": 0.0,
-      "presence_penalty": 0.0,
-      "user": "example_user",
-      "stream": false
+      "stream": true
     }'
 ```
