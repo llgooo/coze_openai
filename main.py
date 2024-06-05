@@ -2,7 +2,7 @@ import json
 import os
 import uuid
 import time
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Header
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
@@ -11,16 +11,13 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
-token = os.getenv("TOKEN")
 bot_id = os.getenv("BOT_ID")
 
 # Ensure necessary environment variables are set
-assert token, "TOKEN not found in environment variables"
 assert bot_id, "BOT_ID not found in environment variables"
 
-# Initialize FastAPI and CozeClient
+# Initialize FastAPI
 app = FastAPI()
-coze_client = CozeClient(token)
 
 
 # Define request and response models
@@ -63,11 +60,19 @@ class ChatCompletionResponse(BaseModel):
 
 
 @app.post("/v1/chat/completions")
-async def chat_completions(request: ChatCompletionRequest):
+async def chat_completions(request: ChatCompletionRequest, authorization: str = Header(None)):
     """
     Endpoint to handle chat completions.
     """
     try:
+        # Extract token from the Authorization header
+        if not authorization:
+            raise HTTPException(status_code=400, detail="Authorization header missing")
+        token = authorization.split(" ")[1]
+
+        # Initialize CozeClient with the token
+        coze_client = CozeClient(token)
+
         # Prepare the request for CozeClient
         coze_request = {
             "bot_id": bot_id,
@@ -79,7 +84,8 @@ async def chat_completions(request: ChatCompletionRequest):
 
         # Handle streaming responses
         if request.stream:
-            return StreamingResponse(event_generator(coze_request, request.model), media_type="text/event-stream")
+            return StreamingResponse(event_generator(coze_request, request.model, coze_client),
+                                     media_type="text/event-stream")
 
         # Handle non-streaming responses
         else:
@@ -91,11 +97,12 @@ async def chat_completions(request: ChatCompletionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def event_generator(coze_request, model):
+async def event_generator(coze_request, model, coze_client):
     """
     Asynchronous generator to handle streaming responses.
     """
     async for stream_resp in coze_client.chat_stream(coze_request):
+        print(stream_resp)
         yield format_stream_response(stream_resp, model)
         if stream_resp.get("is_finish"):
             yield format_finish_response(model)
@@ -171,4 +178,5 @@ def format_finish_response(model):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
