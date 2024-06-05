@@ -14,7 +14,6 @@ This project provides an OpenAI-compatible API for Coze chat API.
 pip install -r requirements.txt
 
 3. Create a .env file:Create a .env file in the root directory of the project and add the following environment variables:
-TOKEN=your_coze_api_token
 BOT_ID=your_bot_id
 
 4. Run the FastAPI application:
